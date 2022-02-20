@@ -1,0 +1,252 @@
+<!doctype html>
+
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title> pinboard </title>
+    <style>
+        body {
+            font-family: sans-serif; Arial;
+        }
+    
+        header, nav {
+            text-align: center;
+        }
+        
+        main {
+            display: flex;
+        }
+        
+        .board {
+            flex: 2 2;
+            height: 80vh;
+            width: 100%;
+            border: 2px solid #000;
+            border-radius: 20px;
+            margin-left: 2%;
+            position: relative;
+            text-align: center;
+        }
+        
+        nav {
+            flex: 1 1 5%;
+            height: 80vh;
+        }
+        
+        ul {
+            padding: 0;
+        }
+        
+        li {
+            list-style-type: none;
+            margin: 25px;
+        }
+        
+        .title {
+            font-weight: bold;
+        }
+        
+        .urgent {
+            color: #ff0000;
+        }
+        
+        .todo {
+            color: #00dd55;
+        }
+        
+        .nice-to-have {
+            color: #0011ff;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h2 class="title"> pinboard </h2>
+</header>
+
+<main>
+    <div class="board">
+    </div>
+    
+    <nav>
+        <h2> navbar </h2>
+        <p class="title"> types of notes: </p>
+        <ul>
+            <li><button class="urgent" onclick="selectNote(event)"> urgent </button></li>
+            <li><button class="todo" onclick="selectNote(event)"> todo </button></li>
+            <li><button class="nice-to-have" onclick="selectNote(event)"> nice-to-have </button></li>
+        </ul>
+        <h3> options </h3>
+        <label> find notes: </label>
+        <input class="search" type="text" />
+        <button onclick="findNotes(event)"> search </button>
+        
+        <br />
+        <br />
+        
+        <p> switch to a different board </p>
+        <select>
+            <option> todo </option>
+        </select>
+        
+        <br />
+        <br />
+        
+        <div class="completed">
+            <h3> completed notes </h3>
+        </div>
+    </nav>
+</main>
+
+
+</body>
+
+
+<script>
+// https://stackoverflow.com/questions/5570390/resize-event-for-textarea
+// https://stackoverflow.com/questions/21714778/antialiased-text-in-firefox-after-css-rotation
+function setUpNoteEditScreen(noteType){
+    // color code notes based on type
+    // show add button, cancel button
+    // allow user to move note around on target area
+    const board = document.querySelector(".board");
+    const boardStyle = window.getComputedStyle(board, null);
+
+    const note = document.createElement('div')
+    note.style.position = "absolute";
+    note.style.width = "200px";
+    note.style.height = "200px";
+    note.style.backgroundColor = "#ffffff";
+    note.style.transform = "rotate(0deg)";
+    note.style.textAlign = "center";
+    
+    const noteTextArea = document.createElement('textarea');
+    noteTextArea.style.marginTop = "2%";
+    noteTextArea.style.height = "50%";
+    note.appendChild(noteTextArea);
+    
+    const completeButton = document.createElement('button');
+    completeButton.textContent = "completed?";
+    note.appendChild(completeButton);
+    completeButton.addEventListener('click', (evt) => {
+        const completedNoteContent = noteTextArea.value;
+        const pre = document.createElement('pre');
+        pre.textContent = completedNoteContent;
+        pre.style.backgroundColor = "#ccc";
+        pre.style.margin = "0 auto";
+        pre.style.width = "50%";
+        
+        const header = document.createElement("p");
+        header.textContent = noteType + ":";
+        const container = document.querySelector(".completed");
+        container.appendChild(header);
+        container.appendChild(pre);
+        container.appendChild(document.createElement('br'));
+        container.appendChild(document.createElement('br'));
+        
+        note.parentNode.removeChild(note);
+    });
+    
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = "delete";
+    deleteButton.style.color = "#ff2200";
+    deleteButton.addEventListener('click', (evt) => {
+        if(confirm("are you sure you want to delete this note?")){
+            note.parentNode.removeChild(note);
+        }
+    });
+    note.appendChild(deleteButton);
+    
+    if(noteType === "urgent"){
+        note.style.border = "2px solid #ff0000";
+    }else if(noteType === "todo"){
+        note.style.border = "2px solid #00dd55";
+    }else{
+        note.style.border = "2px solid #0011ff";
+    }
+    
+    // be able to rotate the note
+    note.addEventListener('wheel', (evt) => {
+        if(document.activeElement === noteTextArea) return;
+        const currRotation =  parseInt(note.style.transform.match(/-?[0-9]+/)[0]) % 360;
+        let newRotation = currRotation;
+        if(evt.deltaY > 0){
+            // rotate left
+            newRotation--;
+        }else{
+            newRotation++;
+        }
+        note.style.transform = `rotate(${newRotation}deg)`;
+    });
+    
+    //  use draggable? https://stackoverflow.com/questions/57435575/how-to-make-a-draggable-element-stay-at-the-new-position-when-dropped-html5-not
+    note.addEventListener('mousedown', (evt) => {
+        //const rect = evt.target.getBoundingClientRect();
+        //const offsetX = evt.clientX - rect.x;
+        //const offsetY = evt.clientY - rect.y;
+        const offsetX = evt.clientX - note.offsetLeft + window.pageXOffset;
+        const offsetY = evt.clientY - note.offsetTop + window.pageYOffset;
+        
+        function move(evt){
+            // restrict movement to only within the board
+            const newX = evt.clientX - offsetX;
+            const newY = evt.clientY - offsetY;
+            const boardWidth = parseInt(boardStyle.width);
+            const boardHeight = parseInt(boardStyle.height);
+            
+            if(newX > 10 && newX <= parseInt(boardStyle.left) + boardWidth - parseInt(evt.target.style.width) &&
+               newY > 10 && newY <= parseInt(boardStyle.top) + boardHeight - parseInt(evt.target.style.height)){
+                // evt here is based on document, not note
+                note.style.left = (evt.clientX - offsetX) + "px";
+                note.style.top = (evt.clientY - offsetY) + "px";
+            }
+        }
+        
+        document.addEventListener('mousemove', move);
+        
+        document.addEventListener('mouseup', (evt) => {
+            document.removeEventListener('mousemove', move);
+        });
+    });
+    
+    board.appendChild(note);
+}
+
+function createNote(){
+    // TODO? this should create an object representing a note
+    // that we can store in json?
+}
+
+function findNotes(evt){
+    // search all child nodes that are notes of the board element
+    const query = document.querySelector(".search").value;
+    //console.log(substring);
+    
+    let boardNodes = Array.from(document.querySelector(".board").children);
+    boardNodes = boardNodes.map((noteDiv) => noteDiv.querySelector("textarea"));
+    
+    for(let note of boardNodes){
+        // case-insensitive
+        if(note.value.toLowerCase().includes(query.toLowerCase())){
+            const currNoteBorderColor = note.parentNode.style.border;
+            note.parentNode.style.border = "1px solid #ffff00"; // yellow highlight
+            setTimeout(() => {
+                note.parentNode.style.border = currNoteBorderColor;
+                //note.style.border = "";
+            }, 2000);
+        }
+    }
+}
+
+function selectNote(evt){
+    const noteType = evt.target.textContent.trim();
+    //alert(`adding a ${noteType}-type note!`);
+    setUpNoteEditScreen(noteType);
+}
+</script>
+
+
+</html>
