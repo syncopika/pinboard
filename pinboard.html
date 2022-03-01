@@ -27,6 +27,7 @@
             margin-left: 2%;
             position: relative;
             text-align: center;
+            background-color: #c4a484;
         }
         
         nav {
@@ -123,8 +124,18 @@ function setUpNoteEditScreen(noteType){
     note.style.transform = "rotate(0deg)";
     note.style.textAlign = "center";
     
+    const pin = document.createElement('div');
+    pin.style.height = "30px";
+    pin.style.width = "30px";
+    pin.style.border = "1px solid #000000";
+    pin.style.borderRadius = "30px";
+    pin.style.backgroundColor = "#ff0000";
+    pin.style.margin = "2% auto";
+    pin.style.transition = "transform 0.5s";
+    note.appendChild(pin);
+    
     const noteTextArea = document.createElement('textarea');
-    noteTextArea.style.marginTop = "2%";
+    noteTextArea.style.marginTop = "5%";
     noteTextArea.style.height = "50%";
     note.appendChild(noteTextArea);
     
@@ -132,20 +143,24 @@ function setUpNoteEditScreen(noteType){
     completeButton.textContent = "completed?";
     note.appendChild(completeButton);
     completeButton.addEventListener('click', (evt) => {
-        const completedNoteContent = noteTextArea.value;
-        const pre = document.createElement('pre');
-        pre.textContent = completedNoteContent;
-        pre.style.backgroundColor = "#ccc";
-        pre.style.margin = "0 auto";
-        pre.style.width = "50%";
+        evt.preventDefault();
         
-        const header = document.createElement("p");
-        header.textContent = noteType + ":";
-        const container = document.querySelector(".completed");
-        container.appendChild(header);
-        container.appendChild(pre);
-        container.appendChild(document.createElement('br'));
-        container.appendChild(document.createElement('br'));
+        const completedNoteContent = noteTextArea.value;
+        if(completedNoteContent.trim() !== ""){
+            const pre = document.createElement('pre');
+            pre.textContent = completedNoteContent;
+            pre.style.backgroundColor = "#ccc";
+            pre.style.margin = "0 auto";
+            pre.style.width = "50%";
+            
+            const header = document.createElement("p");
+            header.textContent = noteType + ":";
+            const container = document.querySelector(".completed");
+            container.appendChild(header);
+            container.appendChild(pre);
+            container.appendChild(document.createElement('br'));
+            container.appendChild(document.createElement('br'));
+        }
         
         note.parentNode.removeChild(note);
     });
@@ -187,10 +202,15 @@ function setUpNoteEditScreen(noteType){
         //const rect = evt.target.getBoundingClientRect();
         //const offsetX = evt.clientX - rect.x;
         //const offsetY = evt.clientY - rect.y;
+        //pin.style.visibility = "hidden";
+        
         const offsetX = evt.clientX - note.offsetLeft + window.pageXOffset;
         const offsetY = evt.clientY - note.offsetTop + window.pageYOffset;
         
         function move(evt){
+            // take pin off of note
+            pin.style.transform = "translate(calc(-100vw))";
+            
             // restrict movement to only within the board
             const newX = evt.clientX - offsetX;
             const newY = evt.clientY - offsetY;
@@ -209,6 +229,10 @@ function setUpNoteEditScreen(noteType){
         
         document.addEventListener('mouseup', (evt) => {
             document.removeEventListener('mousemove', move);
+            
+            // put pin back
+            pin.style.transform = "";
+            //pin.style.visibility = "";
         });
     });
     
