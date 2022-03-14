@@ -18,7 +18,21 @@
             display: flex;
         }
         
-        .board {
+        #board {
+            flex: 2 2;
+            height: 80vh;
+            width: 100%;
+            border: 2px solid #000;
+            border-radius: 20px;
+            margin-left: 2%;
+            position: relative;
+            text-align: center;
+            background-color: #c4a484;
+            background-image: url('cork-board.jpg');
+        }
+        
+        #board3d {
+            display: none;
             flex: 2 2;
             height: 80vh;
             width: 100%;
@@ -59,6 +73,10 @@
         .nice-to-have {
             color: #0011ff;
         }
+        
+        .flipMode {
+            margin-bottom: 1%;
+        }
     </style>
 </head>
 
@@ -66,10 +84,14 @@
 
 <header>
     <h2 class="title"> pinboard </h2>
+    <button class="flipMode"> to 3d </button>
 </header>
 
 <main>
-    <div class="board">
+    <div id="board">
+    </div>
+    
+    <div id="board3d">
     </div>
     
     <nav>
@@ -125,8 +147,8 @@ function setUpNoteEditScreen(noteType){
     note.style.textAlign = "center";
     
     const pin = document.createElement('div');
-    pin.style.height = "30px";
-    pin.style.width = "30px";
+    pin.style.height = "20px";
+    pin.style.width = "20px";
     pin.style.border = "1px solid #000000";
     pin.style.borderRadius = "30px";
     pin.style.backgroundColor = "#ff0000";
@@ -270,6 +292,32 @@ function selectNote(evt){
     //alert(`adding a ${noteType}-type note!`);
     setUpNoteEditScreen(noteType);
 }
+
+const rotateBoard = [
+    {transform: 'rotateY(180deg)'}
+];
+const rotateTiming = {
+    duration: 500,
+    iterations: 1
+};
+
+let currMode = "2d";
+async function flipMode(evt){
+    if(currMode === "2d"){
+        evt.target.textContent = "to " + currMode;
+        await document.getElementById("board").animate(rotateBoard, rotateTiming).finished;
+        document.getElementById("board").style.display = "none";
+        document.getElementById("board3d").style.display = "block";
+        currMode = "3d";
+    }else{
+        evt.target.textContent = "to " + currMode;
+        await document.getElementById("board3d").animate(rotateBoard, rotateTiming).finished;
+        document.getElementById("board3d").style.display = "none";
+        document.getElementById("board").style.display = "block";
+        currMode = "2d";
+    }
+}
+document.querySelector(".flipMode").addEventListener('click', flipMode);
 </script>
 
 
