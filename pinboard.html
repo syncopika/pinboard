@@ -5,6 +5,7 @@
 <head>
     <meta charset="utf-8">
     <title> pinboard </title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         body {
             font-family: sans-serif; Arial;
@@ -129,6 +130,77 @@
 
 
 <script>
+class NoteManager {
+    notemap = {}; // map note id to notes
+    notecounts = {
+        'urgent': 0,
+        'todo': 0,
+        'nice-to-have': 0
+    };
+    
+    constructor(){}
+    
+    addNote(type){
+        // todo
+    }
+    
+};
+const noteManager = new NoteManager();
+
+
+// for the 3d board
+const renderer = new THREE.WebGLRenderer({antialias: true});
+const w = document.getElementById("board").clientWidth;
+const h = document.getElementById("board").clientHeight;
+const camera = new THREE.PerspectiveCamera(60, w / h, 0.01, 1000);
+const scene = new THREE.Scene();
+ 
+function update(){
+}
+
+function animate(){
+    requestAnimationFrame(animate);
+    update();
+    renderer.render(scene, camera);
+}
+
+function addTo3dBoard(color, pos){
+    const geometry = new THREE.PlaneGeometry(2,2);
+    const material = new THREE.MeshBasicMaterial({color});
+    const newNote = new THREE.Mesh(geometry, material);
+    newNote.position.set(pos.x, pos.y, pos.z);
+    scene.add(newNote);
+}
+
+function setup3dBoard(){
+    const container = document.getElementById("board3d");
+
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setSize(w, h);
+    container.appendChild(renderer.domElement);
+
+    camera.position.set(0, 4, 8);
+
+    scene.background = new THREE.Color(0xcccccc);
+    scene.add(camera);
+
+    const pointLight = new THREE.PointLight(0xffffff, 1, 0);
+    pointLight.position.set(0, 3, 0);
+    pointLight.castShadow = true;
+    scene.add(pointLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xffffff);
+    hemiLight.position.set(0, 10, 0);
+    scene.add(hemiLight);
+    
+    //addTo3dBoard(0xff0000, new THREE.Vector3(-5,5,0));
+    
+    animate();
+}
+setup3dBoard();
+
+
 // https://stackoverflow.com/questions/5570390/resize-event-for-textarea
 // https://stackoverflow.com/questions/21714778/antialiased-text-in-firefox-after-css-rotation
 function setUpNoteEditScreen(noteType){
