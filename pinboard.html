@@ -132,21 +132,76 @@
 <script>
 class NoteManager {
     notemap = {}; // map note id to notes
+    
     notecounts = {
         'urgent': 0,
         'todo': 0,
         'nice-to-have': 0
     };
     
+    colors = {
+        'urgent': 0xff0000,
+        'todo': 0x00dd55,
+        'nice-to-have': 0x0011ff
+    };
+    
     constructor(){}
     
-    addNote(type){
-        // todo
+    _create3dNote(color){
+        // create a group
+        const group = new THREE.Group();
+        
+        const geometry = new THREE.PlaneGeometry(3, 3);
+        const material = new THREE.MeshBasicMaterial({color});
+        const newNote = new THREE.Mesh(geometry, material);
+        
+        // TODO: add thumbtack
+        
+        group.add(newNote);
+        
+        return group;
     }
     
+    add3dNote(type, noteElement){
+        const newId = type + this.notecounts[type]++;
+        noteElement.id = newId;
+        
+        // get position of noteElement and translate to 3d coords
+        
+        const note3d = this._create3dNote(this.colors[type]);
+        
+        mouse.x = -1;
+        mouse.y = 1;
+        raycaster.setFromCamera(mouse, camera);
+        const dist = note3d.position.distanceTo(camera.position);
+        raycaster.ray.at(dist, note3d.position); // set note3d position
+        
+        this.notemap[newId] = {
+            'note2d': noteElement,
+            'note3d': note3d
+        }
+        
+        scene.add(note3d);
+    }
+    
+    get3dNote(id){
+        return this.notemap[id]['note3d'];
+    }
+    
+    moveNote3d(newX, newY, boardWidth, boardHeight, note3d){
+        // move 3d note based on 2d note position
+        mouse.x = (newX / boardWidth) * 2 - 1; //(evt.offsetX / evt.target.width) * 2 - 1;
+        mouse.y = -(newY / boardHeight) * 2 + 1; //-(evt.offsetY / evt.target.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        
+        const zPos = note3d.position.z;
+        
+        // get the position that's dist along the new ray and set note3d's position to that
+        const dist = note3d.position.distanceTo(camera.position);
+        raycaster.ray.at(dist, note3d.position);
+    }
 };
 const noteManager = new NoteManager();
-
 
 // for the 3d board
 const renderer = new THREE.WebGLRenderer({antialias: true});
@@ -154,7 +209,9 @@ const w = document.getElementById("board").clientWidth;
 const h = document.getElementById("board").clientHeight;
 const camera = new THREE.PerspectiveCamera(60, w / h, 0.01, 1000);
 const scene = new THREE.Scene();
- 
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
 function update(){
 }
 
@@ -164,13 +221,14 @@ function animate(){
     renderer.render(scene, camera);
 }
 
+/*
 function addTo3dBoard(color, pos){
     const geometry = new THREE.PlaneGeometry(2,2);
     const material = new THREE.MeshBasicMaterial({color});
     const newNote = new THREE.Mesh(geometry, material);
     newNote.position.set(pos.x, pos.y, pos.z);
     scene.add(newNote);
-}
+}*/
 
 function setup3dBoard(){
     const container = document.getElementById("board3d");
@@ -193,8 +251,6 @@ function setup3dBoard(){
     const hemiLight = new THREE.HemisphereLight(0xffffff);
     hemiLight.position.set(0, 10, 0);
     scene.add(hemiLight);
-    
-    //addTo3dBoard(0xff0000, new THREE.Vector3(-5,5,0));
     
     animate();
 }
@@ -314,8 +370,15 @@ function setUpNoteEditScreen(noteType){
             if(newX > 10 && newX <= parseInt(boardStyle.left) + boardWidth - parseInt(evt.target.style.width) &&
                newY > 10 && newY <= parseInt(boardStyle.top) + boardHeight - parseInt(evt.target.style.height)){
                 // evt here is based on document, not note
-                note.style.left = (evt.clientX - offsetX) + "px";
-                note.style.top = (evt.clientY - offsetY) + "px";
+                const newX = evt.clientX - offsetX;
+                const newY = evt.clientY - offsetY;
+                
+                note.style.left = newX + "px";
+                note.style.top = newY + "px";
+                
+                // TODO: figure out the extra addition stuff for offset. I think it has to do with the 3d placement
+                // being based off the center of the square, whereas in 2d we're using the top left corner of the square.
+                noteManager.moveNote3d(newX+120, newY+120, boardWidth, boardHeight, noteManager.get3dNote(note.id));
             }
         }
         
@@ -331,11 +394,8 @@ function setUpNoteEditScreen(noteType){
     });
     
     board.appendChild(note);
-}
-
-function createNote(){
-    // TODO? this should create an object representing a note
-    // that we can store in json?
+    
+    noteManager.add3dNote(noteType, note);
 }
 
 function findNotes(evt){
