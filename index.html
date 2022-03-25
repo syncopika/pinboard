@@ -151,7 +151,7 @@ class NoteManager {
         // and a thumbtack
         const group = new THREE.Group();
         
-        const geometry = new THREE.PlaneGeometry(3, 3);
+        const geometry = new THREE.PlaneGeometry(2.4, 2.4);
         const material = new THREE.MeshBasicMaterial({color});
         const newNote = new THREE.Mesh(geometry, material);
         
@@ -159,10 +159,11 @@ class NoteManager {
         
         const newThumbtack = thumbtackModel.clone();
         newThumbtack.scale.x *= 0.4;
-        newThumbtack.scale.y *= 0.4;
+        newThumbtack.scale.y *= 0.2;
         newThumbtack.scale.z *= 0.4;
         newThumbtack.rotateX(-Math.PI/2);
-        newThumbtack.translateZ(-0.1);
+        newThumbtack.translateY(0.3);
+        //newThumbtack.translateZ(-0.1);
         group.add(newThumbtack);
         
         return group;
@@ -247,14 +248,6 @@ function animate(){
     renderer.render(scene, camera);
 }
 
-/*
-function addTo3dBoard(color, pos){
-    const geometry = new THREE.PlaneGeometry(2,2);
-    const material = new THREE.MeshBasicMaterial({color});
-    const newNote = new THREE.Mesh(geometry, material);
-    newNote.position.set(pos.x, pos.y, pos.z);
-    scene.add(newNote);
-}*/
 
 function setup3dBoard(){
     const container = document.getElementById("board3d");
@@ -270,13 +263,21 @@ function setup3dBoard(){
     scene.add(camera);
 
     const pointLight = new THREE.PointLight(0xffffff, 1, 0);
-    pointLight.position.set(0, 3, 0);
+    pointLight.position.set(0, 4, -2);
     pointLight.castShadow = true;
     scene.add(pointLight);
 
     const hemiLight = new THREE.HemisphereLight(0xffffff);
-    hemiLight.position.set(0, 10, 0);
+    hemiLight.position.set(0, 4, -2);
     scene.add(hemiLight);
+    
+    // add corkboard mesh
+    const bgGeometry = new THREE.PlaneGeometry(20, 20);
+    const bgTexture = new THREE.TextureLoader().load("cork-board.jpg");
+    const bgMaterial = new THREE.MeshBasicMaterial({map: bgTexture});
+    const bg = new THREE.Mesh(bgGeometry, bgMaterial);
+    scene.add(bg);
+    bg.translateZ(-1);
     
     animate();
 }
@@ -378,11 +379,6 @@ function setUpNoteEditScreen(noteType){
     
     //  use draggable? https://stackoverflow.com/questions/57435575/how-to-make-a-draggable-element-stay-at-the-new-position-when-dropped-html5-not
     note.addEventListener('mousedown', (evt) => {
-        //const rect = evt.target.getBoundingClientRect();
-        //const offsetX = evt.clientX - rect.x;
-        //const offsetY = evt.clientY - rect.y;
-        //pin.style.visibility = "hidden";
-        
         const offsetX = evt.clientX - note.offsetLeft + window.pageXOffset;
         const offsetY = evt.clientY - note.offsetTop + window.pageYOffset;
         
