@@ -134,6 +134,8 @@
 class NoteManager {
     notemap = {}; // map note id to notes
     
+    textFont = null; // for displaying text in 3d
+    
     notecounts = {
         'urgent': 0,
         'todo': 0,
@@ -170,6 +172,8 @@ class NoteManager {
     }
     
     add3dNote(type, noteElement){
+        // assign new id to note and store in map
+        // so we can track the 2d and 3d versions of it
         const newId = type + this.notecounts[type]++;
         noteElement.id = newId;
         
@@ -193,6 +197,52 @@ class NoteManager {
         return this.notemap[id]['note3d'];
     }
     
+    removeNote(id){
+        const note = this.notemap[id];
+        if(note){
+            const note2d = note.note2d;
+            note2d.parentNode.removeChild(note2d);
+            scene.remove(note.note3d);
+            delete this.notemap[id];
+        }
+    }
+    
+    // rotation - in radians
+    rotateNote3d(rotation, noteId){
+        const note3d = this.get3dNote(noteId);
+        note3d.setRotationFromAxisAngle(new THREE.Vector3(0, 0, 1), rotation);
+    }
+    
+    updateNote3dText(text, noteId){
+        const note3d = this.get3dNote(noteId);
+        if(note3d.noteText && note3d.noteText === text){
+            return;
+        }else{
+            note3d.noteText = text.split(" ").slice(0, 3).concat(["..."]).join(" "); // take first 3 words
+            
+            // clear old text mesh if exists
+            if(note3d.text3d) note3d.remove(note3d.text3d);
+            
+            const geometry = new THREE.TextGeometry(note3d.noteText, {
+                size: 0.2,
+                height: 0.05,
+                curveSegments: 6,
+                font: noteManager.textFont,
+            });
+            
+            const color = new THREE.Color();
+            color.setRGB(130, 130, 130);
+            
+            const material = new THREE.MeshBasicMaterial({color});
+            const currNoteText = new THREE.Mesh(geometry, material);
+            currNoteText.translateX(-1.1);
+            currNoteText.translateY(0.4);
+            
+            note3d.text3d = currNoteText;
+            note3d.add(currNoteText);
+        }
+    }
+    
     moveNote3d(newX, newY, boardWidth, boardHeight, note3d){
         // move 3d note based on 2d note position
         mouse.x = (newX / boardWidth) * 2 - 1; //(evt.offsetX / evt.target.width) * 2 - 1;
@@ -210,6 +260,7 @@ const noteManager = new NoteManager();
 
 // for the 3d board
 const loader = new THREE.GLTFLoader();
+const fontLoader = new THREE.FontLoader();
 const renderer = new THREE.WebGLRenderer({antialias: true});
 const w = document.getElementById("board").clientWidth;
 const h = document.getElementById("board").clientHeight;
@@ -281,9 +332,13 @@ function setup3dBoard(){
     
     animate();
 }
+
 getModel('thumbtack.gltf').then((model) => {
     thumbtackModel = model;
-    setup3dBoard();
+    fontLoader.load("helvetiker_bold.typeface.json", (tex) => {
+        noteManager.textFont = tex;
+        setup3dBoard();
+    });
 });
 
 
@@ -318,6 +373,9 @@ function setUpNoteEditScreen(noteType){
     noteTextArea.style.marginTop = "5%";
     noteTextArea.style.height = "50%";
     note.appendChild(noteTextArea);
+    noteTextArea.addEventListener('input', (evt) => {
+        noteManager.updateNote3dText(evt.target.value, note.id);
+    });
     
     const completeButton = document.createElement('button');
     completeButton.textContent = "completed?";
@@ -342,7 +400,7 @@ function setUpNoteEditScreen(noteType){
             container.appendChild(document.createElement('br'));
         }
         
-        note.parentNode.removeChild(note);
+        noteManager.removeNote(note.id);
     });
     
     const deleteButton = document.createElement('button');
@@ -350,7 +408,7 @@ function setUpNoteEditScreen(noteType){
     deleteButton.style.color = "#ff2200";
     deleteButton.addEventListener('click', (evt) => {
         if(confirm("are you sure you want to delete this note?")){
-            note.parentNode.removeChild(note);
+            noteManager.removeNote(note.id);
         }
     });
     note.appendChild(deleteButton);
@@ -375,6 +433,7 @@ function setUpNoteEditScreen(noteType){
             newRotation++;
         }
         note.style.transform = `rotate(${newRotation}deg)`;
+        noteManager.rotateNote3d(-newRotation*Math.PI/180, note.id);
     });
     
     //  use draggable? https://stackoverflow.com/questions/57435575/how-to-make-a-draggable-element-stay-at-the-new-position-when-dropped-html5-not
@@ -453,6 +512,7 @@ function selectNote(evt){
 const rotateBoard = [
     {transform: 'rotateY(180deg)'}
 ];
+
 const rotateTiming = {
     duration: 500,
     iterations: 1
