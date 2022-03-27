@@ -9,7 +9,7 @@
     <script src='GLTFLoader.js'></script>
     <style>
         body {
-            font-family: sans-serif; Arial;
+            font-family: 'Helvetica', 'sans-serif', Arial;
         }
     
         header, nav {
@@ -97,7 +97,8 @@
     </div>
     
     <nav>
-        <h2> navbar </h2>
+        <!-- <h2> navbar </h2> -->
+        <p> select a type of note to add to the board </p>
         <p class="title"> types of notes: </p>
         <ul>
             <li><button class="urgent" onclick="selectNote(event)"> urgent </button></li>
@@ -112,6 +113,7 @@
         <br />
         <br />
         
+        <!-- TODO?
         <p> switch to a different board </p>
         <select>
             <option> todo </option>
@@ -119,6 +121,7 @@
         
         <br />
         <br />
+        -->
         
         <div class="completed">
             <h3> completed notes </h3>
@@ -335,7 +338,7 @@ function setup3dBoard(){
 
 getModel('thumbtack.gltf').then((model) => {
     thumbtackModel = model;
-    fontLoader.load("helvetiker_bold.typeface.json", (tex) => {
+    fontLoader.load("helvetiker_regular.typeface.json", (tex) => {
         noteManager.textFont = tex;
         setup3dBoard();
     });
