@@ -7,3 +7,9 @@ https://stackoverflow.com/questions/18038896/how-do-i-make-a-textgeometry-multil
 todo:
 - get 3d text in better alignment
 - be able to move/delete/set-as-completed the 3d notes?
+
+try CRDT stuff:
+https://josephg.com/blog/crdts-go-brrr/
+https://github.com/yjs/yjs#Yjs-CRDT-Algorithm
+
+run server: npx y-websocket

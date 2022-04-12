@@ -101,9 +101,9 @@
         <p> select a type of note to add to the board </p>
         <p class="title"> types of notes: </p>
         <ul>
-            <li><button class="urgent" onclick="selectNote(event)"> urgent </button></li>
-            <li><button class="todo" onclick="selectNote(event)"> todo </button></li>
-            <li><button class="nice-to-have" onclick="selectNote(event)"> nice-to-have </button></li>
+            <li><button class="urgent noteType"> urgent </button></li>
+            <li><button class="todo noteType"> todo </button></li>
+            <li><button class="nice-to-have noteType"> nice-to-have </button></li>
         </ul>
         <h3> options </h3>
         <label> find notes: </label>
@@ -133,7 +133,9 @@
 </body>
 
 
-<script>
+<script type="module">
+import * as Y from 'https://esm.sh/yjs@13'; //https://discuss.yjs.dev/t/import-in-pure-javascript/936
+
 class NoteManager {
     notemap = {}; // map note id to notes
     
@@ -150,6 +152,9 @@ class NoteManager {
         'todo': 0x00dd55,
         'nice-to-have': 0x0011ff
     };
+    
+    ydoc = new Y.Doc();
+    theData = null;
     
     _create3dNote(color){
         // create a group consisting of a plane for the note
@@ -174,6 +179,16 @@ class NoteManager {
         return group;
     }
     
+    init(){
+        // set up watching for changes to the data
+        this.theData = this.ydoc.getMap("theData");
+        this.theData.observe(event => {
+            console.log("theData changed!");
+            console.log(this.theData);
+        });
+        console.log("ydoc set up");
+    }
+    
     add3dNote(type, noteElement){
         // assign new id to note and store in map
         // so we can track the 2d and 3d versions of it
@@ -194,6 +209,9 @@ class NoteManager {
         }
         
         scene.add(note3d);
+        
+        // TODO: this was for testing. make sure to do the real thing
+        noteManager.theData.set("greeting", "hello there");
     }
     
     get3dNote(id){
@@ -208,6 +226,9 @@ class NoteManager {
             scene.remove(note.note3d);
             delete this.notemap[id];
         }
+        
+        // TODO: this was for testing. make sure to do the real thing
+        noteManager.theData.delete("greeting");
     }
     
     // rotation - in radians
@@ -258,8 +279,13 @@ class NoteManager {
         const dist = note3d.position.distanceTo(camera.position);
         raycaster.ray.at(dist, note3d.position);
     }
+    
+    updateNotes(notes){
+        console.log(notes);
+    }
 };
 const noteManager = new NoteManager();
+noteManager.init();
 
 // for the 3d board
 const loader = new THREE.GLTFLoader();
@@ -512,17 +538,23 @@ function selectNote(evt){
     setUpNoteEditScreen(noteType);
 }
 
-const rotateBoard = [
-    {transform: 'rotateY(180deg)'}
-];
+// attach selectNote onclick event listener to each note type button
+Array.from(document.querySelectorAll(".noteType")).forEach((noteType) => {
+    noteType.addEventListener("click", selectNote);
+});
 
-const rotateTiming = {
-    duration: 500,
-    iterations: 1
-};
 
 let currMode = "2d";
 async function flipMode(evt){
+    const rotateBoard = [
+        {transform: 'rotateY(180deg)'}
+    ];
+
+    const rotateTiming = {
+        duration: 500,
+        iterations: 1
+    };
+
     if(currMode === "2d"){
         evt.target.textContent = "to " + currMode;
         await document.getElementById("board").animate(rotateBoard, rotateTiming).finished;
