@@ -179,12 +179,33 @@ class NoteManager {
         return group;
     }
     
+    addToYdoc(noteId, data){
+        this.theData.set(noteId, data);
+    }
+    
+    removeFromYdoc(noteId){
+        this.theData.delete(noteId);
+    }
+    
     init(){
         // set up watching for changes to the data
         this.theData = this.ydoc.getMap("theData");
         this.theData.observe(event => {
             console.log("theData changed!");
-            console.log(this.theData);
+            // https://docs.yjs.dev/api/shared-types/y.map#observing-changes-y.mapevent
+            // update this.notemap (or just use Ydoc map the whole time?)
+            event.changes.keys.forEach((change, key) => {
+                if(change.action === 'add'){
+                    console.log(key + " was added");
+                    console.log(this.theData.get(key));
+                }else if(change.action === 'update'){
+                    console.log(key + " was updated");
+                    console.log(this.theData.get(key));
+                }else if(change.action === 'delete'){
+                    console.log(key + " was deleted");
+                }
+            });
+            
         });
         console.log("ydoc set up");
     }
@@ -210,8 +231,8 @@ class NoteManager {
         
         scene.add(note3d);
         
-        // TODO: this was for testing. make sure to do the real thing
-        noteManager.theData.set("greeting", "hello there");
+        // add note data to Ydoc
+        this.addToYdoc(newId, this.notemap[newId]);
     }
     
     get3dNote(id){
@@ -225,10 +246,10 @@ class NoteManager {
             note2d.parentNode.removeChild(note2d);
             scene.remove(note.note3d);
             delete this.notemap[id];
+            
+            // remove note from Ydoc
+            this.removeFromYdoc(id);
         }
-        
-        // TODO: this was for testing. make sure to do the real thing
-        noteManager.theData.delete("greeting");
     }
     
     // rotation - in radians
