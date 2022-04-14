@@ -4,6 +4,7 @@
   "description": "you can toggle between 2d and 3d views of the board and the views will be synced.",
   "main": "",
   "scripts": {
+    "build": "webpack --mode production",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -17,7 +18,11 @@
   },
   "homepage": "https://github.com/syncopika/pinboard#readme",
   "dependencies": {
+    "webpack": "^5.72.0",
     "y-websocket": "^1.4.0",
     "yjs": "^13.5.34"
+  },
+  "devDependencies": {
+    "webpack-cli": "^4.9.2"
   }
 }
