@@ -14,3 +14,4 @@ todo:
 - need to figure out how to serialize HTML DOM nodes + 3d stuff so clients can recreate + update
 
 run server: npx y-websocket
+don't forget to build the bundle with `npm run build`.

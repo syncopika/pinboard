@@ -22,6 +22,21 @@ class NoteManager {
     wsProvider = null;
     theData = null;
     
+    // generate the object that'll hold 2d note data
+    // that gets passed to the other clients
+    generate2dNoteYdoc(noteElement, noteText, noteType){
+        // to think about: not all clients will have the same screens
+        // so will using the same left and top for everyone be problematic?
+        return {
+            left: noteElement.style.left || "0px",
+            top: noteElement.style.top || "0px",
+            transform: noteElement.style.transform,
+            type: noteType,
+            text: noteText,
+            id: noteElement.id,
+        };
+    }
+    
     addToYdoc(noteId, data){
         this.theData.set(noteId, data);
     }
@@ -38,29 +53,27 @@ class NoteManager {
             // update this.notemap (or just use Ydoc map the whole time?)
             event.changes.keys.forEach((change, key) => {
                 if(change.action === 'add'){
-                    console.log(key + " was added");
-                    //console.log(this.theData.get(key));
-                    
+                    //console.log(key + " was added");
                     if(this.notemap[key] === undefined){
                         // for all connected clients other than the one who just added a new note,
                         // add the new note
-                        this.notemap[key] = JSON.parse(this.theData.get(key));
-                        document.getElementById("board").appendChild(this.notemap[key].note2d);
                         
-                        // TODO: add the 3d note as well
-                    }
-                    
+                        // get the 2d info needed to create a new one
+                        const data2d = JSON.parse(this.theData.get(key));
+                        
+                        // create the new 2d and 3d note
+                        console.log("setting up " + key);
+                        console.log(data2d);
+                        setUpNote(data2d.type, data2d);
+                    }   
                 }else if(change.action === 'update'){
-                    console.log(key + " was updated");
-                    //console.log(this.theData.get(key));
-                    const data = this.theData.get(key);
-                    const note2d = data.note2d;
+                    //console.log(key + " was updated");
                     
-                    for(let prop in note2d){
-                        this.notemap[key][prop] = note2d[prop];
-                    }
+                    // get the 2d info needed to create a new one
+                    const data2d = JSON.parse(this.theData.get(key));
+                    this._update2dNote(data2d);
                     
-                    // TODO: do the 3d note
+                    // TODO: update the 3d note
                     
                 }else if(change.action === 'delete'){
                     console.log(key + " was deleted");
@@ -71,7 +84,6 @@ class NoteManager {
                     // only call removeFromYdoc()
                 }
             });
-            
         });
         
         try {
@@ -82,6 +94,15 @@ class NoteManager {
         }
         
         console.log("ydoc set up");
+    }
+    
+    _update2dNote(data2d){
+        const note2d = this.notemap[data2d.id].note2d;
+        note2d.style.transform = data2d.transform;
+        note2d.style.left = data2d.left;
+        note2d.style.top = data2d.top;
+        
+        // TODO: update text in textarea as well
     }
     
     _create3dNote(color){
@@ -107,7 +128,7 @@ class NoteManager {
         return group;
     }
     
-    add3dNote(type, noteElement){
+    add3dNote(type, noteElement, ydocNoteInfo=null){
         // assign new id to note and store in map
         // so we can track the 2d and 3d versions of it
         const newId = type + this.notecounts[type]++;
@@ -129,7 +150,10 @@ class NoteManager {
         scene.add(note3d);
         
         // add note data to Ydoc
-        this.addToYdoc(newId, JSON.stringify(this.notemap[newId]));
+        if(ydocNoteInfo === null){
+            const data2d = this.generate2dNoteYdoc(noteElement, "", type);
+            this.addToYdoc(newId, JSON.stringify(data2d));
+        }
     }
     
     get3dNote(id){
@@ -203,7 +227,6 @@ class NoteManager {
     }
 };
 const noteManager = new NoteManager();
-noteManager.init();
 
 // for the 3d board
 const loader = new THREE.GLTFLoader();
@@ -285,16 +308,24 @@ getModel('thumbtack.gltf').then((model) => {
     fontLoader.load("helvetiker_regular.typeface.json", (tex) => {
         noteManager.textFont = tex;
         setup3dBoard();
+        
+        // allow new notes to be added since we have all our resources now
         Array.from(document.querySelectorAll(".noteType")).forEach((btn) => {
             btn.disabled = false;
         });
+        
+        // set up Yjs stuff
+        noteManager.init();
     });
 });
 
 
 // https://stackoverflow.com/questions/5570390/resize-event-for-textarea
 // https://stackoverflow.com/questions/21714778/antialiased-text-in-firefox-after-css-rotation
-function setUpNoteEditScreen(noteType){
+// ydocNoteInfo will be an object containing info about a 2d note that can be used
+// when constructing a new note (see return value for generate2dNoteYdoc())
+// should this just be a method in NoteManager??
+function setUpNote(noteType, ydocNoteInfo=null){
     // color code notes based on type
     // show add button, cancel button
     // allow user to move note around on target area
@@ -324,11 +355,13 @@ function setUpNoteEditScreen(noteType){
     noteTextArea.style.height = "50%";
     note.appendChild(noteTextArea);
     noteTextArea.addEventListener('input', (evt) => {
-        // TODO: pass noteManager as arg to setUpNoteEditScreen()?
+        // TODO: pass noteManager as arg to setUpNote()?
         noteManager.updateNote3dText(evt.target.value, note.id);
         
         // update Ydoc
-        noteManager.addToYdoc(note.id, JSON.stringify(noteManager.notemap[note.id]));
+        const data2d = noteManager.generate2dNoteYdoc(note, evt.target.value, noteType);
+        console.log("sending: " + JSON.stringify(data2d));
+        noteManager.addToYdoc(note.id, JSON.stringify(data2d));
     });
     
     const completeButton = document.createElement('button');
@@ -417,6 +450,11 @@ function setUpNoteEditScreen(noteType){
                 // TODO: figure out the extra addition stuff for offset. I think it has to do with the 3d placement
                 // being based off the center of the square, whereas in 2d we're using the top left corner of the square.
                 noteManager.moveNote3d(newX+120, newY+120, boardWidth, boardHeight, noteManager.get3dNote(note.id));
+                
+                // update ydoc
+                const data2d = noteManager.generate2dNoteYdoc(note, noteTextArea.value, noteType);
+                console.log("sending: " + JSON.stringify(data2d));
+                noteManager.addToYdoc(note.id, JSON.stringify(data2d));
             }
         }
         
@@ -431,9 +469,16 @@ function setUpNoteEditScreen(noteType){
         });
     });
     
+    if(ydocNoteInfo){
+        note.style.left = ydocNoteInfo.left;
+        note.style.top = ydocNoteInfo.top;
+        note.style.transform = ydocNoteInfo.transform;
+        //note.id = ydocNoteInfo.id;
+    }
+    
     board.appendChild(note);
     
-    noteManager.add3dNote(noteType, note);
+    noteManager.add3dNote(noteType, note, ydocNoteInfo);
 }
 
 function findNotes(evt){
@@ -460,7 +505,7 @@ function findNotes(evt){
 function selectNote(evt){
     const noteType = evt.target.textContent.trim();
     //alert(`adding a ${noteType}-type note!`);
-    setUpNoteEditScreen(noteType);
+    setUpNote(noteType);
 }
 
 // attach selectNote onclick event listener to each note type button
