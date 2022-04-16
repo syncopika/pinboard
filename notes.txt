@@ -2,7 +2,10 @@ cork-board.jpg from -> https://www.publicdomainpictures.net/en/view-image.php?im
 
 https://developer.mozilla.org/en-US/docs/Web/API/Web_Animations_API/Using_the_Web_Animations_API
 https://stackoverflow.com/questions/18038896/how-do-i-make-a-textgeometry-multiline-how-do-i-put-it-inside-a-square-so-it-wr
+https://stackoverflow.com/questions/57435575/how-to-make-a-draggable-element-stay-at-the-new-position-when-dropped-html5-not
 https://stackoverflow.com/questions/8914985/javascript-how-to-serialize-a-dom-element-as-a-string-to-be-used-later
+https://stackoverflow.com/questions/22919638/can-i-catch-the-cant-establish-a-connection-error-for-a-failed-websocket-conn
+https://developer.mozilla.org/en-US/docs/Web/API/Element/tagName -> for getting the textarea element in a note
 
 try CRDT stuff:
 https://josephg.com/blog/crdts-go-brrr/
